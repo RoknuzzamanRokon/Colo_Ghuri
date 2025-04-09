@@ -14,6 +14,8 @@ from pathlib import Path
 import os
 from datetime import timedelta
 from dotenv import load_dotenv
+import sys
+
 
 # Load environment variables from .env file
 load_dotenv()
@@ -51,6 +53,7 @@ INSTALLED_APPS = [
     
     # Local apps
     'api',
+
 ]
 
 # REST Framework settings
@@ -90,7 +93,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'api.middleware.PointDeductionMiddleware',
+    # 'api.middleware.PointDeductionMiddleware',
 ]
 
 # CORS settings
@@ -119,17 +122,11 @@ WSGI_APPLICATION = 'hotel_api.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
+# settings.py
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': os.getenv('DB_NAME', 'hotel_database'),
-        'USER': os.getenv('DB_USER', 'hotel_user'),
-        'PASSWORD': os.getenv('DB_PASSWORD', 'hotel_password'),
-        'HOST': os.getenv('DB_HOST', 'localhost'),
-        'PORT': os.getenv('DB_PORT', '3306'),
-        'OPTIONS': {
-            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-        },
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
     }
 }
 
@@ -181,7 +178,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Custom user model
-AUTH_USER_MODEL = 'api.User'
+AUTH_USER_MODEL = 'custom_api.User'
 
 # Default point value for new users
 DEFAULT_USER_POINTS = 100
