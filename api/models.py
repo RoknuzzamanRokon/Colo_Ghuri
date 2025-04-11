@@ -23,6 +23,22 @@ class User(AbstractUser):
         if self.point >= amount:
             self.point -= amount
             self.save(update_fields=['point'])
+            if self.point <= 0:
+                # Invalidate JWT token by rotating the refresh token
+                from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
+                from rest_framework_simplejwt.tokens import RefreshToken
+                
+                try:
+                    refresh_token = RefreshToken.for_user(self)
+                    
+                    # Blacklist all outstanding tokens for the user
+                    OutstandingToken.objects.filter(user=self).delete()
+
+                    # Blacklist the refresh token
+                    BlacklistedToken.objects.create(token=str(refresh_token))
+                except Exception as e:
+                    # Handle any errors during token blacklisting
+                    print(f"Error blacklisting token: {e}")
             return True
         return False
 

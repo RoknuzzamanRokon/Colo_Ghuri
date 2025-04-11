@@ -4,7 +4,7 @@ from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
 )
-from .views import RegisterView, UserDetailView, HotelViewSet, get_user_points
+from .views import RegisterView, UserDetailView, HotelViewSet, get_user_points, hotel_search_basic_auth, give_points
 
 router = routers.DefaultRouter()
 router.register(r'hotels', HotelViewSet, basename='hotel')
@@ -16,4 +16,6 @@ urlpatterns = [
     path('auth/refresh/', TokenRefreshView.as_view(), name='refresh'),
     path('auth/user/', UserDetailView.as_view(), name='user-detail'),
     path('auth/points/', get_user_points, name='user-points'),
+    path('hotels/search/basic/', hotel_search_basic_auth, name='hotel-search-basic'),
+    path('admin/give_points/', give_points, name='give-points'),
 ]

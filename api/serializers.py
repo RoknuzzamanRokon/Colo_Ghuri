@@ -38,3 +38,8 @@ class HotelSerializer(serializers.ModelSerializer):
         model = Hotel
         fields = '__all__'
         read_only_fields = ('hotel_id', 'created_at', 'updated_at')
+
+class GivePointsSerializer(serializers.Serializer):
+    """Serializer for giving points to a user"""
+    user_id = serializers.IntegerField(required=True)
+    points = serializers.FloatField(required=True)
