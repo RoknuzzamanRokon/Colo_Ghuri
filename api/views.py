@@ -222,6 +222,7 @@ class TourBookingViewSet(viewsets.ModelViewSet):
             'message': 'Booking successful!',
             'total_cost': total_cost,
             'remaining_points': user.point,
+            'tour_name': package.name, 
             'tour_location': package.destination, 
             'tour_start_date': package.start_date,   
             'tour_end_date': package.end_date,     
@@ -253,6 +254,7 @@ class UserBookingHistoryView(generics.ListAPIView):
             'previous': None,
             'results': [{
                 'package': booking.package.id,
+                'package_name': booking.package.name,
                 'package_destination': booking.package.destination,
                 'package_start_date': booking.package.start_date,
                 'package_end_date': booking.package.end_date,
