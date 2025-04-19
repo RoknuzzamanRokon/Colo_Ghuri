@@ -78,6 +78,7 @@ class TourBookingSerializer(serializers.ModelSerializer):
 class TourDetailSerializer(serializers.ModelSerializer):
     """Serializer for TourPackage model with booking details"""
     bookings = serializers.SerializerMethodField()
+    is_active = serializers.SerializerMethodField()
 
     class Meta:
         model = TourPackage
@@ -88,3 +89,6 @@ class TourDetailSerializer(serializers.ModelSerializer):
         """Get a list of usernames and emails of users who booked the tour"""
         bookings = obj.bookings.all()
         return [{'username': booking.user.username, 'email': booking.user.email} for booking in bookings]
+
+    def get_is_active(self, obj):
+        return timezone.now().date() <= obj.end_date

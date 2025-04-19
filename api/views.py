@@ -9,6 +9,7 @@ from .serializers import UserSerializer, UserDetailSerializer, HotelSerializer, 
 from django.contrib.auth import authenticate
 import base64
 from django.db import models
+from django.utils import timezone
 
 User = get_user_model()
 
@@ -258,7 +259,9 @@ class UserBookingHistoryView(generics.ListAPIView):
                 'package_destination': booking.package.destination,
                 'package_start_date': booking.package.start_date,
                 'package_end_date': booking.package.end_date,
-                'num_travelers': booking.num_travelers
+                'num_travelers': booking.num_travelers,
+                'is_active': timezone.now().date() <= booking.package.end_date
+
             } for booking in queryset]
         })
 
