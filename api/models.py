@@ -71,6 +71,7 @@ class TourPackage(models.Model):
     itinerary = models.TextField()
     start_date = models.DateField(default=timezone.now)
     end_date = models.DateField(default=timezone.now)
+    last_booking_date = models.DateTimeField(null=True, blank=True)
     capacity = models.PositiveIntegerField(default=10)
     images = models.ImageField(upload_to='tour_images/', null=True, blank=True)
     included_items = models.TextField(null=True, blank=True)

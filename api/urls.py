@@ -26,5 +26,6 @@ urlpatterns = [
 
 router.register(r'tourpackages', TourPackageViewSet, basename='tourpackage')
 router.register(r'tourbookings', TourBookingViewSet, basename='tourbooking')
+router.register(r'tourdetails', TourPackageViewSet, basename='tourdetail') # Register TourDetailViewSet
 
 urlpatterns += router.urls

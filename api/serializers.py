@@ -3,6 +3,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.db import models
 from .models import Hotel, TourPackage, TourBooking
+from django.utils import timezone
 
 User = get_user_model()
 
@@ -55,6 +56,12 @@ class TourPackageSerializer(serializers.ModelSerializer):
         model = TourPackage
         fields = '__all__'
         read_only_fields = ('created_at', 'updated_at', 'total_capacity', 'already_booking', 'available_sit')
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        if instance.last_booking_date:
+            representation['last_booking_date'] = instance.last_booking_date.strftime('%Y-%m-%d %H:%M:%S')
+        return representation
 
     def get_already_booking(self, obj):
         """Calculate the number of already booked seats"""

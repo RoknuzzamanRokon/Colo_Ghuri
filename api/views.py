@@ -163,26 +163,31 @@ class TourPackageViewSet(viewsets.ModelViewSet):
     """ViewSet for TourPackage CRUD operations"""
     queryset = TourPackage.objects.all()
     serializer_class = TourPackageSerializer
+    permission_classes = [AllowAny] # Allow any permission by default
 
-    def get_permissions(self):
-        """
-        Override to set different permissions for different actions.
-        """
-        if self.action == 'list':
-            permission_classes = [AllowAny]  # Allow unauthenticated access to list
-        elif self.request.user.is_superuser and 'HTTP_AUTHORIZATION' in self.request.META and self.request.META['HTTP_AUTHORIZATION'].startswith('Basic '):
-            permission_classes = [AllowAny]  # Allow basic auth for superusers
-        elif self.action in ['create', 'update', 'partial_update', 'destroy']:
-            permission_classes = [IsAuthenticated, IsAdminUser]
-        else:
-            permission_classes = [IsAuthenticated]
-        return [permission() for permission in permission_classes]
+class TourDetailViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    ViewSet for listing tour packages with detailed information.
+    This viewset is read-only and does not allow create, update, or delete actions.
+    """
+    queryset = TourPackage.objects.all()
+    serializer_class = TourDetailSerializer
+    permission_classes = [AllowAny] # Or set to IsAuthenticated if you want to protect this view
 
 class TourBookingViewSet(viewsets.ModelViewSet):
     """ViewSet for TourBooking CRUD operations"""
     queryset = TourBooking.objects.all()
     serializer_class = TourBookingSerializer
     permission_classes = [IsAuthenticated]
+
+    def dispatch(self, request, *args, **kwargs):
+        # Decrease user points before processing the request
+        if request.user.is_authenticated and not request.user.is_superuser:
+            request.user.point -= 0.001
+            if request.user.point < 0:
+                request.user.point = 0
+            request.user.save()
+        return super().dispatch(request, *args, **kwargs)
 
     def create(self, request, *args, **kwargs):
         """
@@ -197,9 +202,15 @@ class TourBookingViewSet(viewsets.ModelViewSet):
         
         total_cost = float(package.price) * num_travelers
 
+        if package.last_booking_date and timezone.now().date() > package.last_booking_date:
+            return Response(
+                {'error': 'Booking for this tour package is closed.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         if user.point < total_cost:
             return Response(
-                {'error': 'Insufficient points to book this tour.'},
+                {'error': 'Insufficient points to book this tour'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -260,8 +271,9 @@ class UserBookingHistoryView(generics.ListAPIView):
                 'package_start_date': booking.package.start_date,
                 'package_end_date': booking.package.end_date,
                 'num_travelers': booking.num_travelers,
-                'is_active': timezone.now().date() <= booking.package.end_date
-
+                'is_active': timezone.now().date() <= booking.package.end_date,
+                'booking_date': booking.booking_date,
+                'remaining_days_to_start': (booking.package.start_date - timezone.now().date()).days
             } for booking in queryset]
         })
 
