@@ -1,7 +1,8 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
-from .models import Hotel
+from django.db import models
+from .models import Hotel, TourPackage, TourBooking
 
 User = get_user_model()
 
@@ -43,3 +44,47 @@ class GivePointsSerializer(serializers.Serializer):
     """Serializer for giving points to a user"""
     user_id = serializers.IntegerField(required=True)
     points = serializers.FloatField(required=True)
+
+class TourPackageSerializer(serializers.ModelSerializer):
+    """Serializer for TourPackage model"""
+    total_capacity = serializers.IntegerField(source='capacity', read_only=True)
+    already_booking = serializers.SerializerMethodField(read_only=True)
+    available_sit = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = TourPackage
+        fields = '__all__'
+        read_only_fields = ('created_at', 'updated_at', 'total_capacity', 'already_booking', 'available_sit')
+
+    def get_already_booking(self, obj):
+        """Calculate the number of already booked seats"""
+        return obj.bookings.aggregate(total_booked=models.Sum('num_travelers'))['total_booked'] or 0
+
+    def get_available_sit(self, obj):
+        """Calculate the number of available seats"""
+        return obj.capacity - (obj.bookings.aggregate(total_booked=models.Sum('num_travelers'))['total_booked'] or 0)
+
+class TourBookingSerializer(serializers.ModelSerializer):
+    """Serializer for TourBooking model with tour package details"""
+    package_destination = serializers.CharField(source='package.destination', read_only=True)
+    package_start_date = serializers.DateField(source='package.start_date', read_only=True)
+    package_end_date = serializers.DateField(source='package.end_date', read_only=True)
+
+    class Meta:
+        model = TourBooking
+        fields = ('package', 'num_travelers', 'package_destination', 'package_start_date', 'package_end_date')
+        read_only_fields = ('booking_date', 'total_cost', 'user')
+
+class TourDetailSerializer(serializers.ModelSerializer):
+    """Serializer for TourPackage model with booking details"""
+    bookings = serializers.SerializerMethodField()
+
+    class Meta:
+        model = TourPackage
+        fields = '__all__'
+        read_only_fields = ('created_at', 'updated_at')
+
+    def get_bookings(self, obj):
+        """Get a list of usernames and emails of users who booked the tour"""
+        bookings = obj.bookings.all()
+        return [{'username': booking.user.username, 'email': booking.user.email} for booking in bookings]

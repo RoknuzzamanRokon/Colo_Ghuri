@@ -27,6 +27,14 @@ class PointDeductionMiddleware:
                 validated_token = self.jwt_auth.get_validated_token(auth_header.split(' ')[1])
                 user = self.jwt_auth.get_user(validated_token)
                 
+                # Skip point deduction for superusers
+                if user.is_superuser:
+                    # Check if basic auth was used
+                    auth_header = request.META.get('HTTP_AUTHORIZATION', '')
+                    if auth_header and auth_header.startswith('Basic '):
+                        request.user = user
+                        return self.get_response(request)
+
                 # Check if user has sufficient points
                 if not user.has_sufficient_points():
                     return JsonResponse(

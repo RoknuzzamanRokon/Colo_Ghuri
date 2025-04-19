@@ -59,3 +59,56 @@ class Hotel(models.Model):
     
     def __str__(self):
         return self.hotel_name
+
+class TourPackage(models.Model):
+    """
+    Model to store tour package details
+    """
+    name = models.CharField(max_length=255)
+    destination = models.CharField(max_length=255)
+    duration = models.IntegerField(help_text="Duration in days")
+    price = models.DecimalField(max_digits=10, decimal_places=2)
+    itinerary = models.TextField()
+    start_date = models.DateField(default=timezone.now)
+    end_date = models.DateField(default=timezone.now)
+    capacity = models.PositiveIntegerField(default=10)
+    images = models.ImageField(upload_to='tour_images/', null=True, blank=True)
+    included_items = models.TextField(null=True, blank=True)
+    excluded_items = models.TextField(null=True, blank=True)
+    DIFFICULTY_CHOICES = [
+        ('Easy', 'Easy'),
+        ('Moderate', 'Moderate'),
+        ('Difficult', 'Difficult'),
+    ]
+    difficulty_level = models.CharField(max_length=20, choices=DIFFICULTY_CHOICES, default='Easy')
+    highlights = models.TextField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.name
+
+class TourBooking(models.Model):
+    """
+    Model to handle user tour bookings
+    """
+    STATUS_CHOICES = [
+        ('Pending', 'Pending'),
+        ('Confirmed', 'Confirmed'),
+        ('Cancelled', 'Cancelled'),
+    ]
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='tour_bookings')
+    package = models.ForeignKey(TourPackage, on_delete=models.CASCADE, related_name='bookings')
+    booking_date = models.DateTimeField(auto_now_add=True)
+    num_travelers = models.PositiveIntegerField(default=1)
+    total_cost = models.DecimalField(max_digits=10, decimal_places=2)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='Pending')
+
+    def save(self, *args, **kwargs):
+        # Calculate total cost before saving
+        self.total_cost = self.package.price * self.num_travelers
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"Booking for {self.package.name} by {self.user.username}"
