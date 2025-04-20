@@ -10,7 +10,7 @@ from django.contrib.auth import authenticate
 import base64
 from django.db import models
 from django.utils import timezone
-
+from decimal import Decimal
 User = get_user_model()
 
 # Authentication Views
@@ -242,6 +242,59 @@ class TourBookingViewSet(viewsets.ModelViewSet):
         }, status=status.HTTP_201_CREATED)
     
 
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def cancel_booking(request, booking_id):
+    """
+    View for canceling a tour booking.
+    """
+    try:
+        booking = TourBooking.objects.get(pk=booking_id, user=request.user)
+    except TourBooking.DoesNotExist:
+        return Response({'error': 'Booking not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    if booking.status == 'Cancelled':
+        return Response({'message': 'Booking already cancelled'})
+
+    now = timezone.now()
+    time_difference = booking.booking_date - now
+    
+    # Check if cancellation is allowed based on last_booking_date
+    if booking.package.last_booking_date and now.date() > booking.package.last_booking_date.date():
+        return Response({'error': 'Cancellation not allowed after last booking date.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    refund_percentage = 0
+    
+    # Calculate refund based on cancellation time
+    if time_difference <= timezone.timedelta(minutes=20):
+        refund_percentage = 1.0  # 100% refund
+    elif time_difference <= timezone.timedelta(days=1):
+        refund_percentage = 0.9  # 90% refund
+    elif (booking.package.start_date - now.date()).days > 5:
+        refund_percentage = 0.7  # 70% refund
+    elif now.date() == booking.package.start_date:
+        refund_percentage = 0.4  # 40% refund
+    else:
+        refund_percentage = 0  # No refund
+
+    # Refund points
+    refund_amount = booking.total_cost * Decimal(str(refund_percentage))
+    booking.user.point += float(refund_amount)
+    booking.user.save()
+
+    booking.status = 'Cancelled'
+    booking.save()
+    cancel_booking_time = timezone.now()
+
+
+    return Response({
+        'message': 'Booking cancelled successfully',
+        'cancel_time': cancel_booking_time,
+        'refund_amount': refund_amount,
+        'remaining_points': booking.user.point,
+        'booking_status': booking.status
+    })
+
 # User booking history view
 class UserBookingHistoryView(generics.ListAPIView):
     """
@@ -280,6 +333,26 @@ class UserBookingHistoryView(generics.ListAPIView):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsAdminUser])
 def tour_detail_admin(request, tour_id):
+    """
+    View for super admins to get tour details with booking information
+    """
+    try:
+        tour = TourPackage.objects.get(pk=tour_id)
+    except TourPackage.DoesNotExist:
+        return Response(
+            {'error': 'Tour package not found'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    serializer = TourDetailSerializer(tour)
+    return Response(serializer.data)
+
+
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def tour_detail_user(request, tour_id):
     """
     View for super admins to get tour details with booking information
     """
