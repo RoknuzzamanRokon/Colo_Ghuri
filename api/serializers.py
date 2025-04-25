@@ -27,12 +27,30 @@ class UserSerializer(serializers.ModelSerializer):
         user = User.objects.create_user(**validated_data)
         return user
 
+class UserBookingHistoryItemSerializer(serializers.ModelSerializer):
+    """Serializer for individual booking items in user history"""
+    package_name = serializers.CharField(source='package.name', read_only=True)
+    package_destination = serializers.CharField(source='package.destination', read_only=True)
+    package_start_date = serializers.DateField(source='package.start_date', read_only=True)
+    package_end_date = serializers.DateField(source='package.end_date', read_only=True)
+
+    class Meta:
+        model = TourBooking
+        fields = (
+            'id', 'package_name', 'package_destination', 'package_start_date',
+            'package_end_date', 'num_travelers', 'booking_date', 'status',
+            'tracking_id', 'total_cost'
+        )
+        read_only_fields = fields # Make all fields read-only for history display
+
 class UserDetailSerializer(serializers.ModelSerializer):
-    """Serializer for User details"""
+    """Serializer for User details including booking history"""
+    tour_bookings = UserBookingHistoryItemSerializer(many=True, read_only=True)
+
     class Meta:
         model = User
-        fields = ('id', 'username', 'email', 'point', 'created_at')
-        read_only_fields = ('id', 'point', 'created_at')
+        fields = ('id', 'username', 'email', 'point', 'created_at', 'tour_bookings')
+        read_only_fields = ('id', 'point', 'created_at', 'tour_bookings')
 
 class HotelSerializer(serializers.ModelSerializer):
     """Serializer for Hotel model"""
