@@ -25,7 +25,7 @@ urlpatterns = [
     
     path('user/account/', AccountDetailView.as_view(), name='account-detail'),
     path('user/bookings/history/', UserBookingHistoryView.as_view(), name='user-booking-history'), 
-    path('bookings/cancel/<int:booking_id>/', cancel_booking, name='cancel-booking'),
+    path('bookings/cancel/<uuid:tour_booking_tracking_id>/', cancel_booking, name='cancel-booking'),
     path('user/tourpackages/<int:tour_id>/details/', tour_detail_user, name='tour-detail-user'),
 
 

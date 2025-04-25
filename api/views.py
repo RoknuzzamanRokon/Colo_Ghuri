@@ -228,7 +228,9 @@ class TourBookingViewSet(viewsets.ModelViewSet):
         user.save()
 
         # Create the booking
+        import uuid
         booking = TourBooking.objects.create(user=user, package=package, num_travelers=num_travelers)
+        tracking_id = uuid.uuid4()
 
         return Response({
             'message': 'Booking successful!',
@@ -237,19 +239,20 @@ class TourBookingViewSet(viewsets.ModelViewSet):
             'tour_name': package.name, 
             'tour_location': package.destination, 
             'tour_start_date': package.start_date,   
-            'tour_end_date': package.end_date,     
+            'tour_end_date': package.end_date,
+            'tour_booking_tracking_id': str(tracking_id),
             'total_booked_seats_history': already_booked + num_travelers, # Include current booking in history
         }, status=status.HTTP_201_CREATED)
     
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
-def cancel_booking(request, booking_id):
+def cancel_booking(request, tour_booking_tracking_id):
     """
     View for canceling a tour booking.
     """
     try:
-        booking = TourBooking.objects.get(pk=booking_id, user=request.user)
+        booking = TourBooking.objects.get(tracking_id=tour_booking_tracking_id, user=request.user)
     except TourBooking.DoesNotExist:
         return Response({'error': 'Booking not found'}, status=status.HTTP_404_NOT_FOUND)
 
@@ -292,7 +295,8 @@ def cancel_booking(request, booking_id):
         'cancel_time': cancel_booking_time,
         'refund_amount': refund_amount,
         'remaining_points': booking.user.point,
-        'booking_status': booking.status
+        'booking_status': booking.status,
+        'tour_booking_tracking_id': str(booking.tracking_id)
     })
 
 # User booking history view
@@ -326,7 +330,9 @@ class UserBookingHistoryView(generics.ListAPIView):
                 'num_travelers': booking.num_travelers,
                 'is_active': timezone.now().date() <= booking.package.end_date,
                 'booking_date': booking.booking_date,
-                'remaining_days_to_start': (booking.package.start_date - timezone.now().date()).days
+                'remaining_days_to_start': (booking.package.start_date - timezone.now().date()).days,
+                'tour_booking_tracking_id': str(booking.tracking_id),
+                'status': booking.status,
             } for booking in queryset]
         })
 

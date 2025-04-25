@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.conf import settings
 from django.utils import timezone
+import uuid
 
 class User(AbstractUser):
     """
@@ -105,10 +106,13 @@ class TourBooking(models.Model):
     num_travelers = models.PositiveIntegerField(default=1)
     total_cost = models.DecimalField(max_digits=10, decimal_places=2)
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='Pending')
+    tracking_id = models.UUIDField(editable=False)
 
     def save(self, *args, **kwargs):
         # Calculate total cost before saving
         self.total_cost = self.package.price * self.num_travelers
+        if not self.tracking_id:
+            self.tracking_id = uuid.uuid4()
         super().save(*args, **kwargs)
 
     def __str__(self):
