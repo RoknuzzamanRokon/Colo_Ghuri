@@ -334,6 +334,51 @@ class UserBookingHistoryView(generics.ListAPIView):
         active_bookings_count = queryset.filter(status='Pending', package__end_date__gte=timezone.now().date()).count()
         cancelled_bookings_count = queryset.filter(status='Cancelled').count()
 
+        # Filter for tours that ended within the last 7 days
+        seven_days_ago = timezone.now().date() - timezone.timedelta(days=1)
+        recent_ended_tours = queryset.filter(
+            package__end_date__gte=seven_days_ago,
+            package__end_date__lt=timezone.now().date() # Ended before today
+        ).order_by('-package__end_date') # Order by end date descending
+
+        recent_ended_tours_data = [{
+            'package': booking.package.id,
+            'package_tracking_id': str(booking.package.tracking_id),
+            'package_name': booking.package.name,
+            'package_destination': booking.package.destination,
+            'package_start_date': booking.package.start_date,
+            'package_end_date': booking.package.end_date,
+            'num_travelers': booking.num_travelers,
+            'is_active': timezone.now().date() <= booking.package.end_date,
+            'booking_date': booking.booking_date,
+            'remaining_days_to_start': (booking.package.start_date - timezone.now().date()).days,
+            'tour_booking_tracking_id': str(booking.tracking_id),
+            'status': booking.status,
+        } for booking in recent_ended_tours]
+
+        # Find the nearest upcoming tour booking
+        nearest_upcoming_tour = queryset.filter(
+            package__start_date__gte=timezone.now().date()
+        ).order_by('package__start_date').first()
+
+        nearest_upcoming_tour_data = None
+        if nearest_upcoming_tour:
+             nearest_upcoming_tour_data = {
+                'package': nearest_upcoming_tour.package.id,
+                'package_tracking_id': str(nearest_upcoming_tour.package.tracking_id),
+                'package_name': nearest_upcoming_tour.package.name,
+                'package_destination': nearest_upcoming_tour.package.destination,
+                'package_start_date': nearest_upcoming_tour.package.start_date,
+                'package_end_date': nearest_upcoming_tour.package.end_date,
+                'num_travelers': nearest_upcoming_tour.num_travelers,
+                'is_active': timezone.now().date() <= nearest_upcoming_tour.package.end_date,
+                'booking_date': nearest_upcoming_tour.booking_date,
+                'remaining_days_to_start': (nearest_upcoming_tour.package.start_date - timezone.now().date()).days,
+                'tour_booking_tracking_id': str(nearest_upcoming_tour.tracking_id),
+                'status': nearest_upcoming_tour.status,
+            }
+
+
         return Response({
             'count': queryset.count(),
             'next': None,
@@ -342,6 +387,8 @@ class UserBookingHistoryView(generics.ListAPIView):
                 'active_booking': active_bookings_count,
                 'cancel_booking': cancelled_bookings_count,
             },
+            'resent_tour_status': recent_ended_tours_data,
+            'nearest_upcoming_tour': nearest_upcoming_tour_data,
             'results': [{
                 'package': booking.package.id,
                 'package_tracking_id': str(booking.package.tracking_id),
