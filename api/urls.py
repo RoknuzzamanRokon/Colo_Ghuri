@@ -36,12 +36,12 @@ urlpatterns = [
 ]
 
 router.register(r'tourbookings', TourBookingViewSet, basename='tourbooking')
-router.register(r'tourdetails', TourDetailViewSet, basename='tourdetail') 
+router.register(r'tourdetails', TourDetailViewSet, basename='tourdetail')
 
 urlpatterns += router.urls
 
 # Custom URLs for tour packages
 urlpatterns += [
-    path('tourpackages/all/', TourPackageViewSet.as_view({'get': 'list'}), name='tourpackage-list'),
+    path('tourpackages/all/', TourDetailViewSet.as_view({'get': 'list'}), name='tourpackage-list'), # Use TourDetailViewSet for public access
     path('tourpackages/delete/<uuid:tracking_id>/', TourPackageViewSet.as_view({'delete': 'destroy'}), name='tourpackage-delete'),
 ]
