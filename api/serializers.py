@@ -44,13 +44,31 @@ class UserBookingHistoryItemSerializer(serializers.ModelSerializer):
         read_only_fields = fields # Make all fields read-only for history display
 
 class UserDetailSerializer(serializers.ModelSerializer):
-    """Serializer for User details including booking history"""
+    """Serializer for User details including booking history and booking summary"""
     tour_bookings = UserBookingHistoryItemSerializer(many=True, read_only=True)
+    booking_summary = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ('id', 'username', 'email', 'point', 'created_at', 'tour_bookings')
-        read_only_fields = ('id', 'point', 'created_at', 'tour_bookings')
+        fields = ('id', 'username', 'email', 'point', 'created_at', 'booking_summary', 'tour_bookings')
+        read_only_fields = ('id', 'point', 'created_at', 'booking_summary', 'tour_bookings')
+
+    def get_booking_summary(self, obj):
+        """Calculates booking summary statistics for the user"""
+        total_booking_success = obj.tour_bookings.filter(status='Pending').count() # Assuming 'Pending' means successful booking
+        total_booking_cancel = obj.tour_bookings.filter(status='Cancelled').count()
+
+        total_return_point = obj.tour_bookings.filter(status='Cancelled').aggregate(total_refund=models.Sum('total_cost'))['total_refund'] or 0
+        # To calculate total spent, we need to sum the total_cost of all bookings that are not cancelled.
+        # Assuming total_cost is stored on the booking object when created.
+        total_spend_point = obj.tour_bookings.exclude(status='Cancelled').aggregate(total_spent=models.Sum('total_cost'))['total_spent'] or 0
+
+        return {
+            "total_booking_success": total_booking_success,
+            "total_booking_cancel": total_booking_cancel,
+            "total_return_point": total_return_point,
+            "total_spend_point": total_spend_point,
+        }
 
 class HotelSerializer(serializers.ModelSerializer):
     """Serializer for Hotel model"""
@@ -90,15 +108,13 @@ class TourPackageSerializer(serializers.ModelSerializer):
         return obj.capacity - (obj.bookings.aggregate(total_booked=models.Sum('num_travelers'))['total_booked'] or 0)
 
 class TourBookingSerializer(serializers.ModelSerializer):
-    """Serializer for TourBooking model with tour package details"""
-    package_destination = serializers.CharField(source='package.destination', read_only=True)
-    package_start_date = serializers.DateField(source='package.start_date', read_only=True)
-    package_end_date = serializers.DateField(source='package.end_date', read_only=True)
+    """Serializer for TourBooking model"""
+    package_tracking_id = serializers.CharField(write_only=True, required=True)
 
     class Meta:
         model = TourBooking
-        fields = ('package', 'num_travelers', 'package_destination', 'package_start_date', 'package_end_date')
-        read_only_fields = ('booking_date', 'total_cost', 'user')
+        fields = ('package_tracking_id', 'num_travelers')
+        read_only_fields = ('booking_date', 'total_cost', 'user', 'package') # Mark package as read-only here
 
 class TourDetailSerializer(serializers.ModelSerializer):
     """Serializer for TourPackage model with booking details"""

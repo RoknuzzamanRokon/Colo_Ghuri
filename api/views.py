@@ -200,12 +200,20 @@ class TourBookingViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
 
         user = request.user
-        package = serializer.validated_data['package']
+        package_tracking_id = serializer.validated_data['package_tracking_id']
         num_travelers = serializer.validated_data['num_travelers']
-        
+
+        try:
+            package = TourPackage.objects.get(tracking_id=package_tracking_id)
+        except TourPackage.DoesNotExist:
+            return Response(
+                {'error': 'Tour package not found with the provided tracking ID.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
         total_cost = float(package.price) * num_travelers
 
-        if package.last_booking_date and timezone.now().date() > package.last_booking_date:
+        if package.last_booking_date and timezone.now().date() > package.last_booking_date.date():
             return Response(
                 {'error': 'Booking for this tour package is closed.'},
                 status=status.HTTP_400_BAD_REQUEST
@@ -233,17 +241,20 @@ class TourBookingViewSet(viewsets.ModelViewSet):
         # Create the booking
         import uuid
         booking = TourBooking.objects.create(user=user, package=package, num_travelers=num_travelers)
-        tracking_id = uuid.uuid4()
+        booking.tracking_id = uuid.uuid4() # Assign a tracking ID to the booking
+        booking.total_cost = total_cost # Save the calculated total_cost to the booking
+        booking.save()
+
 
         return Response({
             'message': 'Booking successful!',
             'total_cost': total_cost,
             'remaining_points': user.point,
-            'tour_name': package.name, 
-            'tour_location': package.destination, 
-            'tour_start_date': package.start_date,   
+            'tour_name': package.name,
+            'tour_location': package.destination,
+            'tour_start_date': package.start_date,
             'tour_end_date': package.end_date,
-            'tour_booking_tracking_id': str(tracking_id),
+            'tour_booking_tracking_id': str(booking.tracking_id),
             'total_booked_seats_history': already_booked + num_travelers, # Include current booking in history
         }, status=status.HTTP_201_CREATED)
     
