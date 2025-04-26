@@ -6,7 +6,7 @@ from rest_framework_simplejwt.views import (
 )
 from .views import (RegisterView, UserDetailView, HotelViewSet, get_user_points, 
                     hotel_search_basic_auth, give_points, AccountDetailView, update_hotel_admin, TourPackageViewSet, 
-                    TourBookingViewSet, tour_detail_admin, tour_detail_user, UserBookingHistoryView, cancel_booking)
+                    TourBookingViewSet, tour_detail_admin, tour_detail_user, UserBookingHistoryView, cancel_booking, TourDetailViewSet)
 
 router = routers.DefaultRouter()
 router.register(r'hotels', HotelViewSet, basename='hotel')
@@ -37,6 +37,6 @@ urlpatterns = [
 
 router.register(r'tourpackages', TourPackageViewSet, basename='tourpackage')
 router.register(r'tourbookings', TourBookingViewSet, basename='tourbooking')
-router.register(r'tourdetails', TourPackageViewSet, basename='tourdetail') 
+router.register(r'tourdetails', TourDetailViewSet, basename='tourdetail') 
 
 urlpatterns += router.urls

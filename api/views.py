@@ -106,7 +106,9 @@ def give_points(request):
             user.point += points
             user.save()
             return Response({
-                'message': f'Successfully added {points} points to user with ID {user_id}'
+                'message': f'Successfully added {points} points to user with ID {user_id}',
+                'username': user.username,
+                'email': user.email
             })
         except User.DoesNotExist:
             return Response(
@@ -173,6 +175,7 @@ class TourDetailViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = TourPackage.objects.all()
     serializer_class = TourDetailSerializer
     permission_classes = [AllowAny] # Or set to IsAuthenticated if you want to protect this view
+    lookup_field = 'tracking_id'
 
 class TourBookingViewSet(viewsets.ModelViewSet):
     """ViewSet for TourBooking CRUD operations"""

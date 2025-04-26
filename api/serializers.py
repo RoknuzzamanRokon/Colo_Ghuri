@@ -111,9 +111,10 @@ class TourDetailSerializer(serializers.ModelSerializer):
         read_only_fields = ('created_at', 'updated_at')
 
     def get_bookings(self, obj):
-        """Get a list of usernames and emails of users who booked the tour"""
-        bookings = obj.bookings.all()
-        return [{'username': booking.user.username, 'email': booking.user.email} for booking in bookings]
+        """Get total booked and available seats"""
+        total_booked = obj.bookings.aggregate(total_booked=models.Sum('num_travelers'))['total_booked'] or 0
+        available_sit = obj.capacity - total_booked
+        return {'total_booked': total_booked, 'available_sit': available_sit}
 
     def get_is_active(self, obj):
         return timezone.now().date() <= obj.end_date
