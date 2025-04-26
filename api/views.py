@@ -363,19 +363,28 @@ class UserBookingHistoryView(generics.ListAPIView):
 
         nearest_upcoming_tour_data = None
         if nearest_upcoming_tour:
-             nearest_upcoming_tour_data = {
+            # Calculate total travelers for this package across all bookings by the user
+            total_num_travelers = queryset.filter(
+                package=nearest_upcoming_tour.package
+            ).aggregate(total_travelers=models.Sum('num_travelers'))['total_travelers'] or 0
+
+            nearest_upcoming_tour_data = {
                 'package': nearest_upcoming_tour.package.id,
-                'package_tracking_id': str(nearest_upcoming_tour.package.tracking_id),
+                'is_active': timezone.now().date() <= nearest_upcoming_tour.package.end_date,
+                'remaining_days_to_start': (nearest_upcoming_tour.package.start_date - timezone.now().date()).days,
                 'package_name': nearest_upcoming_tour.package.name,
                 'package_destination': nearest_upcoming_tour.package.destination,
-                'package_start_date': nearest_upcoming_tour.package.start_date,
-                'package_end_date': nearest_upcoming_tour.package.end_date,
-                'num_travelers': nearest_upcoming_tour.num_travelers,
-                'is_active': timezone.now().date() <= nearest_upcoming_tour.package.end_date,
-                'booking_date': nearest_upcoming_tour.booking_date,
-                'remaining_days_to_start': (nearest_upcoming_tour.package.start_date - timezone.now().date()).days,
-                'tour_booking_tracking_id': str(nearest_upcoming_tour.tracking_id),
-                'status': nearest_upcoming_tour.status,
+                'total_num_travelers': total_num_travelers,
+                'traking_field': {
+                    'package_tracking_id': str(nearest_upcoming_tour.package.tracking_id),
+                    'tour_booking_tracking_id': str(nearest_upcoming_tour.tracking_id)
+                },
+                'time_status': {
+                    'package_start_date': nearest_upcoming_tour.package.start_date,
+                    'package_end_date': nearest_upcoming_tour.package.end_date,
+                    'booking_date': nearest_upcoming_tour.booking_date
+                },
+                'current_status': nearest_upcoming_tour.status
             }
 
 
