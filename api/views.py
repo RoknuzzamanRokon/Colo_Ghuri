@@ -165,7 +165,23 @@ class TourPackageViewSet(viewsets.ModelViewSet):
     """ViewSet for TourPackage CRUD operations"""
     queryset = TourPackage.objects.all()
     serializer_class = TourPackageSerializer
-    permission_classes = [AllowAny] # Allow any permission by default
+    permission_classes = [IsAdminUser] # Only allow admin users for CRUD operations
+    lookup_field = 'tracking_id' # Use tracking_id for lookups
+
+    def get_queryset(self):
+        """
+        Optionally filter tour packages by destination or name
+        """
+        queryset = TourPackage.objects.all()
+        destination = self.request.query_params.get('destination')
+        name = self.request.query_params.get('name')
+
+        if destination:
+            queryset = queryset.filter(destination__icontains=destination)
+        if name:
+            queryset = queryset.filter(name__icontains=name)
+
+        return queryset
 
 class TourDetailViewSet(viewsets.ReadOnlyModelViewSet):
     """
