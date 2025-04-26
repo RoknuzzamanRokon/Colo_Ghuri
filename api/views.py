@@ -330,13 +330,21 @@ class UserBookingHistoryView(generics.ListAPIView):
 
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
-        serializer = self.get_serializer(queryset, many=True)
+
+        active_bookings_count = queryset.filter(status='Pending', package__end_date__gte=timezone.now().date()).count()
+        cancelled_bookings_count = queryset.filter(status='Cancelled').count()
+
         return Response({
-            'count': serializer.data.__len__(),
+            'count': queryset.count(),
             'next': None,
             'previous': None,
+            'status': {
+                'active_booking': active_bookings_count,
+                'cancel_booking': cancelled_bookings_count,
+            },
             'results': [{
                 'package': booking.package.id,
+                'package_tracking_id': str(booking.package.tracking_id),
                 'package_name': booking.package.name,
                 'package_destination': booking.package.destination,
                 'package_start_date': booking.package.start_date,
