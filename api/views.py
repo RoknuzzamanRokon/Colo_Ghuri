@@ -261,14 +261,27 @@ class TourBookingViewSet(viewsets.ModelViewSet):
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
-def cancel_booking(request, tour_booking_tracking_id):
+def cancel_booking(request):
     """
-    View for canceling a tour booking.
+    View for canceling a tour booking using tracking IDs in the request body.
     """
+    package_tracking_id = request.data.get('package_tracking_id')
+    tour_booking_tracking_id = request.data.get('tour_booking_tracking_id')
+
+    if not package_tracking_id or not tour_booking_tracking_id:
+        return Response(
+            {'error': 'Both package_tracking_id and tour_booking_tracking_id are required in the request body.'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
     try:
-        booking = TourBooking.objects.get(tracking_id=tour_booking_tracking_id, user=request.user)
+        booking = TourBooking.objects.get(
+            package__tracking_id=package_tracking_id,
+            tracking_id=tour_booking_tracking_id,
+            user=request.user
+        )
     except TourBooking.DoesNotExist:
-        return Response({'error': 'Booking not found'}, status=status.HTTP_404_NOT_FOUND)
+        return Response({'error': 'Booking not found for the provided tracking IDs and user.'}, status=status.HTTP_404_NOT_FOUND)
 
     if booking.status == 'Cancelled':
         return Response({'message': 'Booking already cancelled'})
@@ -416,12 +429,12 @@ class UserBookingHistoryView(generics.ListAPIView):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsAdminUser])
-def tour_detail_admin(request, tour_id):
+def tour_detail_admin(request, tracking_id):
     """
-    View for super admins to get tour details with booking information
+    View for super admins to get tour details with booking information using tracking ID
     """
     try:
-        tour = TourPackage.objects.get(pk=tour_id)
+        tour = TourPackage.objects.get(tracking_id=tracking_id)
     except TourPackage.DoesNotExist:
         return Response(
             {'error': 'Tour package not found'},
@@ -436,12 +449,12 @@ def tour_detail_admin(request, tour_id):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
-def tour_detail_user(request, tour_id):
+def tour_detail_user(request, tracking_id):
     """
-    View for super admins to get tour details with booking information
+    View for users to get tour details using tracking ID
     """
     try:
-        tour = TourPackage.objects.get(pk=tour_id)
+        tour = TourPackage.objects.get(tracking_id=tracking_id)
     except TourPackage.DoesNotExist:
         return Response(
             {'error': 'Tour package not found'},

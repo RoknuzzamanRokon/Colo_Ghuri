@@ -117,9 +117,10 @@ class TourBookingSerializer(serializers.ModelSerializer):
         read_only_fields = ('booking_date', 'total_cost', 'user', 'package') # Mark package as read-only here
 
 class TourDetailSerializer(serializers.ModelSerializer):
-    """Serializer for TourPackage model with booking details"""
+    """Serializer for TourPackage model with booking details and user list"""
     bookings = serializers.SerializerMethodField()
     is_active = serializers.SerializerMethodField()
+    user_list = serializers.SerializerMethodField()
 
     class Meta:
         model = TourPackage
@@ -134,3 +135,21 @@ class TourDetailSerializer(serializers.ModelSerializer):
 
     def get_is_active(self, obj):
         return timezone.now().date() <= obj.end_date
+
+    def get_user_list(self, obj):
+        """Get list of users who booked this tour"""
+        users = User.objects.filter(tour_bookings__package=obj).distinct()
+        user_info = []
+        for user in users:
+            # Calculate total seats booked by this user for this tour package
+            total_sit_book = TourBooking.objects.filter(user=user, package=obj).aggregate(total_booked=models.Sum('num_travelers'))['total_booked'] or 0
+            user_info.append({
+                "user_id": user.id,
+                "user_name": user.username,
+                "user_email": user.email,
+                "total_sit_book": total_sit_book
+            })
+        return {
+            "total_user": users.count(),
+            "user_info": user_info
+        }

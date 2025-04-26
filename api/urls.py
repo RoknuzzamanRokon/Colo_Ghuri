@@ -25,13 +25,13 @@ urlpatterns = [
     
     path('user/account/', AccountDetailView.as_view(), name='account-detail'),
     path('user/bookings/history/', UserBookingHistoryView.as_view(), name='user-booking-history'), 
-    path('bookings/cancel/<uuid:tour_booking_tracking_id>/', cancel_booking, name='cancel-booking'),
-    path('user/tourpackages/<int:tour_id>/details/', tour_detail_user, name='tour-detail-user'),
+    path('bookings/cancel/', cancel_booking, name='cancel-booking'),
+    path('user/tourpackages/<uuid:tracking_id>/details/', tour_detail_user, name='tour-detail-user'),
 
 
     path('admin/give_points/', give_points, name='give-points'),
     path('admin/hotels/<int:hotel_id>/', update_hotel_admin, name='update-hotel-admin'),
-    path('admin/tourpackages/<int:tour_id>/details/', tour_detail_admin, name='tour-detail-admin'),
+    path('admin/tourpackages/<uuid:tracking_id>/details/', tour_detail_admin, name='tour-detail-admin'),
 
 ]
 
