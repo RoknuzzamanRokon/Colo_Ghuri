@@ -1,4 +1,4 @@
-from rest_framework import viewsets, generics, permissions, status
+from rest_framework import viewsets, generics, permissions, status, serializers
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny, IsAdminUser
@@ -457,7 +457,8 @@ def tour_detail_admin(request, tracking_id):
             status=status.HTTP_404_NOT_FOUND
         )
 
-    serializer = TourDetailSerializer(tour)
+    # Use the TourDetailSerializer which includes user list for admin
+    serializer = TourDetailSerializer(tour) 
     return Response(serializer.data)
 
 
@@ -467,7 +468,7 @@ def tour_detail_admin(request, tracking_id):
 @permission_classes([IsAuthenticated])
 def tour_detail_user(request, tracking_id):
     """
-    View for users to get tour details using tracking ID
+    View for users to get tour details using tracking ID (without user list)
     """
     try:
         tour = TourPackage.objects.get(tracking_id=tracking_id)
@@ -477,5 +478,6 @@ def tour_detail_user(request, tracking_id):
             status=status.HTTP_404_NOT_FOUND
         )
 
+    # Use the existing TourDetailSerializer from serializers.py
     serializer = TourDetailSerializer(tour)
     return Response(serializer.data)
